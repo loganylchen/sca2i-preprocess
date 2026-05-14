@@ -125,6 +125,90 @@ chr22 and chrX site ranges respectively.
 
 ![sparsity](img/smoke_pbmc1k/05_sparsity_pattern.png)
 
+## Single-cell context analysis
+
+To connect the candidate edit sites back to standard scRNA-seq analysis we
+(a) annotate each site against Ensembl r110 and (b) embed the full 1222-cell
+PBMC matrix, overlay the 49 smoke cells, and look at per–cell-type editing.
+
+The plots below are produced by `tools/annotate_sites_gtf.py` +
+`tools/analyze_with_scanpy.py`, both runnable inside the
+`sca2i-analyze` env (`workflow/envs/analyze.yaml` or
+`docker/Dockerfile`).
+
+### 6. Site annotation against Ensembl r110
+
+| Bucket | Count |
+|---|---|
+| exon       | 354  |
+| intron     | 1374 |
+| intergenic | 419  |
+| protein_coding host | 1538 |
+| lncRNA host         | 171  |
+
+Top host genes (chr22+X): TNRC6B (76), STAG2 (35), PPP6R2 (34), MED15
+(23), DIAPH2 (23), NFAM1 (22). Most candidate sites land in introns of
+protein-coding genes — consistent with the expected enrichment of A-to-I
+editing inside SINE/Alu repeats embedded in introns.
+
+![gene annotation](img/smoke_pbmc1k/09_gene_annotation_breakdown.png)
+
+### 7. UMAP — leiden clusters + PBMC cell types
+
+Standard scanpy pipeline on the filtered 10x v3 matrix
+(1222 cells → 1113 after `min_genes=200`, `pct_mt<20%`; 33538 genes →
+2000 HVGs; PCA 30 → UMAP). Cell types assigned by scoring leiden clusters
+against a compact PBMC marker panel (CD4/CD8 T, naive T, NK, B,
+CD14 mono, FCGR3A mono, DC, platelet).
+
+![umap celltype](img/smoke_pbmc1k/06_umap_celltype.png)
+
+Cluster sizes: Mono_CD14=385, T_naive=356, B=186, NK=178, DC=8.
+
+### 8. Smoke cells overlaid on the full UMAP
+
+The 49 cells we ran through the editing pipeline (red) cover most of the
+major PBMC populations. 46/49 land inside QC-pass barcodes; 3 were
+dropped by the expression-side QC threshold and don't show up.
+
+![umap overlay](img/smoke_pbmc1k/07_umap_smoke_overlay.png)
+
+### 9. Editing metrics painted on smoke cells
+
+For each smoke cell we compute: total coverage (Σ `n` across sites),
+total edits (Σ `k`), number of covered sites, and global AF = Σk/Σn.
+Background cells (no editing data) are greyed out.
+
+![umap edits](img/smoke_pbmc1k/08_umap_edits.png)
+
+### 10. Editing rate by cell type
+
+Per-cell global AF, grouped by the leiden-inferred cell type. n=50
+subsample is too small to draw biological conclusions; this is what the
+*plot shape* looks like, not a result. With production `min_coverage=20`
+and full barcode set, the same chart becomes a real per-population
+editing summary.
+
+![edits by celltype](img/smoke_pbmc1k/10_editing_by_celltype.png)
+
+## Reproducing the analysis plots
+
+```bash
+# Build the analysis env (one of two options)
+conda env create -n sca2i-analyze -f workflow/envs/analyze.yaml
+#   - or -
+docker build -f docker/Dockerfile -t sca2i-analyze:latest .
+
+# One-time: Ensembl GTF for chr22/X gene annotation
+mkdir -p resources/gtf && curl -fsSL -o \
+    resources/gtf/Homo_sapiens.GRCh38.110.gtf.gz \
+    https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
+
+# Run
+PYTHONNOUSERSITE=1 conda run -n sca2i-analyze python tools/annotate_sites_gtf.py
+PYTHONNOUSERSITE=1 conda run -n sca2i-analyze python tools/analyze_with_scanpy.py
+```
+
 ## Fixes captured on this branch
 
 - **`from __future__ import annotations`** removed from all snakemake
