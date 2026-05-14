@@ -1,0 +1,46 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+description: sca2i-preprocess config schema
+type: object
+required: [samples_tsv, cells_tsv, genome, alu, reditools, filters, aggregate, resources]
+properties:
+  samples_tsv: { type: string }
+  cells_tsv:   { type: string }
+  genome:
+    type: object
+    required: [fasta_url, chromosomes]
+    properties:
+      fasta_url:    { type: string }
+      chromosomes:
+        oneOf:
+          - { type: string, enum: ["all"] }
+          - { type: array, items: { type: string }, minItems: 1 }
+  alu:
+    type: object
+    required: [rmsk_url]
+    properties:
+      rmsk_url: { type: string }
+  reditools:
+    type: object
+    required: [min_read_quality, min_base_quality, min_read_length, min_coverage, min_edits_per_position, strand, threads_per_job]
+    properties:
+      min_read_quality:       { type: integer, minimum: 0 }
+      min_base_quality:       { type: integer, minimum: 0 }
+      min_read_length:        { type: integer, minimum: 1 }
+      min_coverage:           { type: integer, minimum: 1 }
+      min_edits_per_position: { type: integer, minimum: 1 }
+      strand:                 { type: integer, enum: [0, 1, 2] }
+      threads_per_job:        { type: integer, minimum: 1 }
+  filters:
+    type: object
+    properties:
+      annotate_motif: { type: boolean }
+      annotate_alu:   { type: boolean }
+      motif_window:   { type: integer, minimum: 1 }
+  aggregate:
+    type: object
+    required: [out_h5ad]
+    properties:
+      out_h5ad:          { type: string }
+      drop_empty_sites:  { type: boolean }
+  resources:
+    type: object

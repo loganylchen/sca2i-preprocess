@@ -1,0 +1,7 @@
+obs_id	sample_id	chemistry	donor	celltype	cell_barcode	bam_basename
+# 10x: one row per pseudobulk group (celltype x donor); cell_barcode column carries the donor's barcode list as a comma-separated string OR leave blank and provide a separate barcodes-per-group file.
+# Smart-seq2/3: one row per cell; bam_basename names the per-cell BAM file inside samples.cell_bam_dir (without .bam extension).
+example_10x__Tcell	example_10x	10x	donor1	Tcell
+example_10x__Bcell	example_10x	10x	donor1	Bcell
+example_ss__cell001	example_ss	smartseq3	donor1	Tcell		cell001
+example_ss__cell002	example_ss	smartseq3	donor1	Bcell		cell002

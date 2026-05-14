@@ -1,0 +1,13 @@
+name: sca2i-preprocess-python
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python >=3.10
+  - pandas >=2
+  - pyarrow >=15
+  - numpy >=1.26
+  - scipy >=1.11
+  - anndata >=0.10
+  - pyfaidx >=0.7
+  - h5py >=3

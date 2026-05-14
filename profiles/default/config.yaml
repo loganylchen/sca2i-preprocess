@@ -1,0 +1,12 @@
+# Snakemake 8.x default profile (local execution).
+#
+# Override on the CLI: `snakemake --profile profiles/default --cores 16`
+cores: 8
+use-conda: true
+keep-going: true
+rerun-incomplete: true
+printshellcmds: true
+restart-times: 1
+default-resources:
+  - mem_mb=4000
+  - tmpdir="/tmp"

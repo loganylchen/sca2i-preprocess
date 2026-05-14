@@ -1,0 +1,7 @@
+name: sca2i-preprocess-sinto
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - sinto >=0.10
+  - samtools >=1.18

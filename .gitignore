@@ -1,0 +1,37 @@
+# Snakemake
+.snakemake/
+.snakemake.log
+*.snakemake.log
+
+# Outputs
+results/
+logs/
+benchmarks/
+
+# Resources (large, regenerable)
+resources/genome/
+resources/alu/
+resources/reditools/
+
+# Conda envs (managed by snakemake --use-conda)
+.conda/
+conda-envs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Local overrides
+config/samples.local.tsv
+config/cells.local.tsv
+profiles/local/

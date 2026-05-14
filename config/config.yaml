@@ -1,0 +1,77 @@
+# sca2i-preprocess workflow config
+# Validated against workflow/schemas/config.schema.yaml at start-up.
+
+samples_tsv: "config/samples.tsv"
+cells_tsv:   "config/cells.tsv"
+
+genome:
+  # Either a remote URL (will be downloaded) or an absolute local path.
+  # Defaults to GRCh38 primary assembly. Override for mm10 etc.
+  fasta_url: "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+  # Restrict the scan to these chromosomes. Use "all" to derive from the .fai
+  # after indexing (slower; covers MT + alts).
+  chromosomes:
+    - "1"
+    - "2"
+    - "3"
+    - "4"
+    - "5"
+    - "6"
+    - "7"
+    - "8"
+    - "9"
+    - "10"
+    - "11"
+    - "12"
+    - "13"
+    - "14"
+    - "15"
+    - "16"
+    - "17"
+    - "18"
+    - "19"
+    - "20"
+    - "21"
+    - "22"
+    - "X"
+    - "Y"
+
+alu:
+  # RepeatMasker out.gz from UCSC. Mouse users: swap for mm10/mm39.
+  rmsk_url: "http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.out.gz"
+
+reditools:
+  # No --bed_file by design (de novo mode for filter-effect benchmarking).
+  min_read_quality: 20         # -q
+  min_base_quality: 25         # -bq
+  min_read_length: 30          # -mrl
+  min_coverage: 5              # -mn  (per-cell / per-group depth floor)
+  min_edits_per_position: 1    # -men
+  strand: 0                    # -s   (0 = unstranded; SS3/10x both unstranded by default)
+  threads_per_job: 4
+
+filters:
+  # Annotation only — these become columns in .var, not hard filters.
+  annotate_motif: true
+  annotate_alu: true
+  motif_window: 1              # +/- bases around the edited position
+
+aggregate:
+  out_h5ad: "results/anndata/sca2i_input.h5ad"
+  # If true, drop sites with zero non-zero observations across all obs units.
+  drop_empty_sites: true
+
+resources:
+  # Per-rule resource defaults; profiles can override per cluster.
+  reditools:
+    threads: 4
+    mem_mb: 8000
+  sinto:
+    threads: 4
+    mem_mb: 4000
+  umi_dedup:
+    threads: 2
+    mem_mb: 8000
+  markdup:
+    threads: 2
+    mem_mb: 4000

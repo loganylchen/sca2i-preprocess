@@ -1,0 +1,80 @@
+"""sca2i-preprocess top-level Snakefile.
+
+Snakemake 8.x. Validates config + sample sheets, dispatches per-chemistry
+preprocessing, runs REDItools2 de novo, annotates with ADAR motif + Alu, and
+aggregates to a single AnnData consumable by sca2i.tl.discover().
+"""
+from __future__ import annotations
+
+from pathlib import Path
+import pandas as pd
+from snakemake.utils import min_version, validate
+
+min_version("8.0")
+
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+configfile: "config/config.yaml"
+validate(config, "schemas/config.schema.yaml")
+
+
+# ---------------------------------------------------------------------------
+# Sample / cell metadata
+# ---------------------------------------------------------------------------
+SAMPLES = (
+    pd.read_csv(config["samples_tsv"], sep="\t", dtype=str, comment="#")
+    .set_index("sample_id", drop=False)
+)
+CELLS = (
+    pd.read_csv(config["cells_tsv"], sep="\t", dtype=str, comment="#")
+    .set_index("obs_id", drop=False)
+)
+
+# Validate chemistry consistency between sheets
+for obs_id, row in CELLS.iterrows():
+    sid = row["sample_id"]
+    if sid not in SAMPLES.index:
+        raise ValueError(f"cells.tsv obs_id={obs_id} references unknown sample_id={sid}")
+    if SAMPLES.at[sid, "chemistry"] != row["chemistry"]:
+        raise ValueError(
+            f"chemistry mismatch for obs_id={obs_id}: "
+            f"samples.tsv={SAMPLES.at[sid, 'chemistry']} cells.tsv={row['chemistry']}"
+        )
+
+CHROMS = config["genome"]["chromosomes"]
+if CHROMS == "all":
+    # Resolved lazily after genome indexing in refs.smk
+    CHROMS = []
+
+
+# ---------------------------------------------------------------------------
+# Wildcard constraints (escape paths cleanly)
+# ---------------------------------------------------------------------------
+wildcard_constraints:
+    sample = r"[A-Za-z0-9_\-]+",
+    obs    = r"[A-Za-z0-9_\-\.]+",
+    group  = r"[A-Za-z0-9_\-\.]+",
+    cell   = r"[A-Za-z0-9_\-\.]+",
+    chrom  = r"[A-Za-z0-9_\-\.]+",
+
+
+# ---------------------------------------------------------------------------
+# Rule includes
+# ---------------------------------------------------------------------------
+include: "rules/common.smk"
+include: "rules/refs.smk"
+include: "rules/prep_10x.smk"
+include: "rules/prep_ss.smk"
+include: "rules/reditools.smk"
+include: "rules/filters.smk"
+include: "rules/aggregate.smk"
+
+
+# ---------------------------------------------------------------------------
+# Default target
+# ---------------------------------------------------------------------------
+rule all:
+    input:
+        config["aggregate"]["out_h5ad"],

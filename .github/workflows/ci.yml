@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install snakemake + jsonschema
+        run: |
+          python -m pip install --upgrade pip
+          pip install "snakemake>=8" jsonschema pyyaml pandas
+
+      - name: Validate config schema
+        run: |
+          python - <<'PY'
+          import yaml, jsonschema
+          cfg = yaml.safe_load(open("config/config.yaml"))
+          schema = yaml.safe_load(open("workflow/schemas/config.schema.yaml"))
+          jsonschema.validate(cfg, schema)
+          print("config/config.yaml validates against workflow/schemas/config.schema.yaml")
+          PY
+
+      - name: Snakemake lint
+        run: snakemake --lint || true   # warnings are informational
+
+      - name: Snakemake dry-run
+        run: snakemake -n --cores 1

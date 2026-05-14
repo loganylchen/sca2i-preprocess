@@ -1,0 +1,10 @@
+name: sca2i-preprocess-pybedtools
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python >=3.10
+  - pybedtools >=0.10
+  - bedtools >=2.31
+  - pandas >=2
+  - pyarrow >=15
