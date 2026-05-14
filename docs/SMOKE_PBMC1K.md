@@ -70,6 +70,61 @@ PYTHONNOUSERSITE=1 snakemake --use-conda --cores 1 -p --keep-going
 One cell of 50 dropped: it had zero candidate edits passing `min_coverage=3`
 on chr22 + chrX.
 
+## Diagnostic plots
+
+Generated with `tools/plot_smoke_results.py` from
+`results/anndata/sca2i_input.h5ad`.
+
+| Stat | Value |
+|---|---|
+| median sites/cell | 47 |
+| max sites/cell    | 101 |
+| mean AF           | 0.91 |
+| median AF         | 1.00 |
+| nonzero (cell, site) entries | 2353 |
+| chr22 sites / chrX sites | 1010 / 1137 |
+| `adar_motif_ok` sites | 356 / 2147 (16.6%) |
+
+### 1. Per-cell detection rate
+
+Cells ranked by number of covered sites. Roughly uniform across the 49 cells
+that survived the `min_coverage=3` filter; one cell at the tail has ~1 site.
+
+![sites per cell](img/smoke_pbmc1k/01_sites_per_cell.png)
+
+### 2. Allele-fraction distribution
+
+Per (cell, site) edit fraction `k / n`. The smoke profile keeps
+`min_coverage=3`, so most entries land at AF=1 — each cell barely covers
+each site, and any coverage with at least one G read is a "full" edit.
+Production `min_coverage=20` will spread this out.
+
+![AF histogram](img/smoke_pbmc1k/02_edit_fraction_hist.png)
+
+### 3. Motif context (ctx5 × ctx3)
+
+Left: counts of candidate sites by 5′ and 3′ neighbouring base.
+Right: ADAR1 preference mask (5′ ≠ G AND 3′ = G). 356 / 2147 sites
+(16.6%) match. This is annotation-only; we do not drop non-preferred
+sites at the preprocess stage.
+
+![motif heatmap](img/smoke_pbmc1k/03_motif_context_heatmap.png)
+
+### 4. Sites per chromosome
+
+Stacked by `adar_motif_ok`. chr22 and chrX contribute roughly equal site
+counts.
+
+![chrom breakdown](img/smoke_pbmc1k/04_chrom_breakdown.png)
+
+### 5. Sparsity pattern
+
+Coverage matrix `X` (49 cells × 2147 sites) is highly sparse
+(nnz=2353, density ≈ 2.2%). The two diagonal bands correspond to the
+chr22 and chrX site ranges respectively.
+
+![sparsity](img/smoke_pbmc1k/05_sparsity_pattern.png)
+
 ## Fixes captured on this branch
 
 - **`from __future__ import annotations`** removed from all snakemake
