@@ -1,7 +1,51 @@
 obs_id	sample_id	chemistry	donor	cell_type	cell_barcode	bam_basename
-# 10x: one row per pseudobulk group (celltype x donor); cell_barcode column carries the donor's barcode list as a comma-separated string OR leave blank and provide a separate barcodes-per-group file.
-# Smart-seq2/3: one row per cell; bam_basename names the per-cell BAM file inside samples.cell_bam_dir (without .bam extension).
-example_10x__Tcell	example_10x	10x	donor1	Tcell
-example_10x__Bcell	example_10x	10x	donor1	Bcell
-example_ss__cell001	example_ss	smartseq3	donor1	Tcell		cell001
-example_ss__cell002	example_ss	smartseq3	donor1	Bcell		cell002
+pbmc1k__GACCCTTCATCATCTT-1	pbmc1k	10x	pbmc_donor	PBMC	GACCCTTCATCATCTT-1	
+pbmc1k__ACGTAACAGGTGCTTT-1	pbmc1k	10x	pbmc_donor	PBMC	ACGTAACAGGTGCTTT-1	
+pbmc1k__AACAAGAGTTATAGAG-1	pbmc1k	10x	pbmc_donor	PBMC	AACAAGAGTTATAGAG-1	
+pbmc1k__AGCTACAGTCGTTTCC-1	pbmc1k	10x	pbmc_donor	PBMC	AGCTACAGTCGTTTCC-1	
+pbmc1k__CTGGACGCACACGGTC-1	pbmc1k	10x	pbmc_donor	PBMC	CTGGACGCACACGGTC-1	
+pbmc1k__CCGATGGTCACCTCTG-1	pbmc1k	10x	pbmc_donor	PBMC	CCGATGGTCACCTCTG-1	
+pbmc1k__CAGATTGAGAACGTGC-1	pbmc1k	10x	pbmc_donor	PBMC	CAGATTGAGAACGTGC-1	
+pbmc1k__GTTGTGAAGACCTTTG-1	pbmc1k	10x	pbmc_donor	PBMC	GTTGTGAAGACCTTTG-1	
+pbmc1k__ACCCTTGGTATCGTAC-1	pbmc1k	10x	pbmc_donor	PBMC	ACCCTTGGTATCGTAC-1	
+pbmc1k__CGTGCTTAGCTTTGTG-1	pbmc1k	10x	pbmc_donor	PBMC	CGTGCTTAGCTTTGTG-1	
+pbmc1k__CAATTTCAGATTGCGG-1	pbmc1k	10x	pbmc_donor	PBMC	CAATTTCAGATTGCGG-1	
+pbmc1k__AAAGGATCACCGGCTA-1	pbmc1k	10x	pbmc_donor	PBMC	AAAGGATCACCGGCTA-1	
+pbmc1k__CACATGAGTTTCGACA-1	pbmc1k	10x	pbmc_donor	PBMC	CACATGAGTTTCGACA-1	
+pbmc1k__TCACACCGTTAAACCC-1	pbmc1k	10x	pbmc_donor	PBMC	TCACACCGTTAAACCC-1	
+pbmc1k__GAGCCTGGTCCACGCA-1	pbmc1k	10x	pbmc_donor	PBMC	GAGCCTGGTCCACGCA-1	
+pbmc1k__GTGCGTGAGCTTCTAG-1	pbmc1k	10x	pbmc_donor	PBMC	GTGCGTGAGCTTCTAG-1	
+pbmc1k__CTCATTAAGGAAGTGA-1	pbmc1k	10x	pbmc_donor	PBMC	CTCATTAAGGAAGTGA-1	
+pbmc1k__TAGTGCACAGAGGAAA-1	pbmc1k	10x	pbmc_donor	PBMC	TAGTGCACAGAGGAAA-1	
+pbmc1k__TAGATCGCAAATGGTA-1	pbmc1k	10x	pbmc_donor	PBMC	TAGATCGCAAATGGTA-1	
+pbmc1k__TCACATTCAGAACTAA-1	pbmc1k	10x	pbmc_donor	PBMC	TCACATTCAGAACTAA-1	
+pbmc1k__AAGAACAAGACCATTC-1	pbmc1k	10x	pbmc_donor	PBMC	AAGAACAAGACCATTC-1	
+pbmc1k__ACCTGAACATGAGAAT-1	pbmc1k	10x	pbmc_donor	PBMC	ACCTGAACATGAGAAT-1	
+pbmc1k__TCGCAGGGTTCTAACG-1	pbmc1k	10x	pbmc_donor	PBMC	TCGCAGGGTTCTAACG-1	
+pbmc1k__ACATGCAGTTGCTTGA-1	pbmc1k	10x	pbmc_donor	PBMC	ACATGCAGTTGCTTGA-1	
+pbmc1k__ACTGATGCACCAGCCA-1	pbmc1k	10x	pbmc_donor	PBMC	ACTGATGCACCAGCCA-1	
+pbmc1k__ATATCCTGTATGAGCG-1	pbmc1k	10x	pbmc_donor	PBMC	ATATCCTGTATGAGCG-1	
+pbmc1k__TCAGGTACAATCGCAT-1	pbmc1k	10x	pbmc_donor	PBMC	TCAGGTACAATCGCAT-1	
+pbmc1k__GTTAGTGAGAACGTGC-1	pbmc1k	10x	pbmc_donor	PBMC	GTTAGTGAGAACGTGC-1	
+pbmc1k__GAGTGTTGTACGTAGG-1	pbmc1k	10x	pbmc_donor	PBMC	GAGTGTTGTACGTAGG-1	
+pbmc1k__TAGACCAGTCTCGGGT-1	pbmc1k	10x	pbmc_donor	PBMC	TAGACCAGTCTCGGGT-1	
+pbmc1k__ATGAGTCTCCAGTTCC-1	pbmc1k	10x	pbmc_donor	PBMC	ATGAGTCTCCAGTTCC-1	
+pbmc1k__CTGCTCACAGCGTTTA-1	pbmc1k	10x	pbmc_donor	PBMC	CTGCTCACAGCGTTTA-1	
+pbmc1k__GCCGTGAGTCAGTCCG-1	pbmc1k	10x	pbmc_donor	PBMC	GCCGTGAGTCAGTCCG-1	
+pbmc1k__GAGTTGTCACGGTGCT-1	pbmc1k	10x	pbmc_donor	PBMC	GAGTTGTCACGGTGCT-1	
+pbmc1k__GGGTTTACACTAAACC-1	pbmc1k	10x	pbmc_donor	PBMC	GGGTTTACACTAAACC-1	
+pbmc1k__GTCACGGCACCGTACG-1	pbmc1k	10x	pbmc_donor	PBMC	GTCACGGCACCGTACG-1	
+pbmc1k__GGAACCCTCTAATTCC-1	pbmc1k	10x	pbmc_donor	PBMC	GGAACCCTCTAATTCC-1	
+pbmc1k__CGAGTGCGTTCCGCGA-1	pbmc1k	10x	pbmc_donor	PBMC	CGAGTGCGTTCCGCGA-1	
+pbmc1k__CTGATCCTCCCTCTAG-1	pbmc1k	10x	pbmc_donor	PBMC	CTGATCCTCCCTCTAG-1	
+pbmc1k__CGTGCTTCAAGCGCTC-1	pbmc1k	10x	pbmc_donor	PBMC	CGTGCTTCAAGCGCTC-1	
+pbmc1k__TCATACTCAGGTACGA-1	pbmc1k	10x	pbmc_donor	PBMC	TCATACTCAGGTACGA-1	
+pbmc1k__ACGTAGTCACGCCACA-1	pbmc1k	10x	pbmc_donor	PBMC	ACGTAGTCACGCCACA-1	
+pbmc1k__GTAATCGCAGTTTCGA-1	pbmc1k	10x	pbmc_donor	PBMC	GTAATCGCAGTTTCGA-1	
+pbmc1k__GTGGAAGAGCCAAGTG-1	pbmc1k	10x	pbmc_donor	PBMC	GTGGAAGAGCCAAGTG-1	
+pbmc1k__GTCATTTCAAGAGAGA-1	pbmc1k	10x	pbmc_donor	PBMC	GTCATTTCAAGAGAGA-1	
+pbmc1k__TACCGGGTCCTCGATC-1	pbmc1k	10x	pbmc_donor	PBMC	TACCGGGTCCTCGATC-1	
+pbmc1k__CAATACGAGGCAGCTA-1	pbmc1k	10x	pbmc_donor	PBMC	CAATACGAGGCAGCTA-1	
+pbmc1k__TGACCCTTCTCATTGT-1	pbmc1k	10x	pbmc_donor	PBMC	TGACCCTTCTCATTGT-1	
+pbmc1k__AACAGGGGTGGGAGAG-1	pbmc1k	10x	pbmc_donor	PBMC	AACAGGGGTGGGAGAG-1	
+pbmc1k__GTGGCGTAGAATAACC-1	pbmc1k	10x	pbmc_donor	PBMC	GTGGCGTAGAATAACC-1	

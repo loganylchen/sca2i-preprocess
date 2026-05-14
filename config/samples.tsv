@@ -1,3 +1,2 @@
 sample_id	chemistry	donor	bam	cell_bam_dir	barcodes_tsv
-example_10x	10x	donor1	/abs/path/to/cellranger/possorted_genome_bam.bam		/abs/path/to/cellranger/filtered_feature_bc_matrix/barcodes.tsv.gz
-example_ss	smartseq3	donor1		/abs/path/to/ss3_per_cell_bams/
+pbmc1k	10x	pbmc_donor	/home/logan/Projects/sca2i-preprocess/results/data/pbmc1k/pbmc_1k_v3_bam.bam		/home/logan/Projects/sca2i-preprocess/results/data/pbmc1k/filtered_feature_bc_matrix/barcodes.tsv.gz

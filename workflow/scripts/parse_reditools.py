@@ -9,7 +9,6 @@ REDItools2 columns (canonical, v1.x):
 We keep:
     chrom, pos (1-based), strand, ref, alt, k (alt count), n (coverage), AF
 """
-from __future__ import annotations
 
 from pathlib import Path
 import gzip

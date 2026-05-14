@@ -1,11 +1,19 @@
-"""10x preprocessing — barcode→group split via sinto, then UMI dedup."""
+"""10x preprocessing — per-barcode split via sinto, then UMI dedup.
+
+Per-cell architecture: each cell barcode produces one BAM. cells.tsv must
+contain one row per cell barcode for the sample (obs_id = sample__barcode,
+cell_barcode = the 10x barcode).
+
+ChildIOException fix: split_bam_per_cell outputs a sentinel file (not a
+``directory()``) so downstream rules can write per-cell BAI/dedup files into
+the same ``split/`` directory.
+"""
 
 
 rule build_cell_groups:
     """
     Write a sinto-compatible 2-col TSV mapping cell_barcode -> group_name.
-    Group = celltype (within a sample). Donor is implicit (1 sample = 1 donor
-    for 10x typically; multi-donor 10x should be pre-split per sample).
+    For per-cell mode, group_name == cell_barcode (one BAM per cell).
     """
     input:
         cells_tsv = config["cells_tsv"],
@@ -19,18 +27,17 @@ rule build_cell_groups:
         "../scripts/prep_groups.py"
 
 
-checkpoint split_bam_by_group:
+checkpoint split_bam_per_cell:
     """
-    Use sinto to split the cellranger BAM into one BAM per group in a single
-    pass. Outputs to a directory; downstream rules trigger the checkpoint
-    via `checkpoints.split_bam_by_group.get(sample=...).output[0]` to discover
-    the actual per-group BAM filenames at runtime.
+    Use sinto to split the cellranger BAM into one BAM per cell barcode in a
+    single pass. Sentinel file (not directory) keeps the path tree compatible
+    with downstream rules that write into the same dir (BAI, dedup outputs).
     """
     input:
         bam        = lambda wc: SAMPLES.at[wc.sample, "bam"],
         groups_tsv = "results/prep/10x/{sample}/groups.tsv",
     output:
-        outdir = directory("results/prep/10x/{sample}/raw"),
+        sentinel = "results/prep/10x/{sample}/split/.sentinel",
     threads: config["resources"]["sinto"]["threads"]
     resources:
         mem_mb = config["resources"]["sinto"]["mem_mb"],
@@ -40,30 +47,33 @@ checkpoint split_bam_by_group:
         "../envs/sinto.yaml"
     shell:
         r"""
+        set -euo pipefail
         BAM=$(realpath {input.bam:q})
         GROUPS=$(realpath {input.groups_tsv:q})
         LOG=$(realpath {log:q})
-        mkdir -p {output.outdir}
-        cd {output.outdir}
+        OUTDIR=$(dirname {output.sentinel:q})
+        mkdir -p "$OUTDIR"
+        cd "$OUTDIR"
         sinto filterbarcodes \
             -b "$BAM" \
             -c "$GROUPS" \
             -p {threads} \
             > "$LOG" 2>&1
+        touch .sentinel
         """
 
 
-def _group_bam(wildcards):
-    """Resolve the per-group BAM via the checkpoint output directory."""
-    outdir = checkpoints.split_bam_by_group.get(sample=wildcards.sample).output.outdir
-    return f"{outdir}/{wildcards.group}.bam"
+def _split_bam(wildcards):
+    """Resolve per-cell BAM, gated by the split checkpoint."""
+    checkpoints.split_bam_per_cell.get(sample=wildcards.sample)
+    return f"results/prep/10x/{wildcards.sample}/split/{wildcards.group}.bam"
 
 
-rule index_group_bam:
+rule index_cell_bam:
     input:
-        bam = _group_bam,
+        bam = _split_bam,
     output:
-        bai = "results/prep/10x/{sample}/raw/{group}.bam.bai",
+        bai = "results/prep/10x/{sample}/split/{group}.bam.bai",
     log:
         "logs/prep_10x/{sample}/index_{group}.log",
     conda:
@@ -73,10 +83,10 @@ rule index_group_bam:
 
 
 rule umi_dedup:
-    """UMI-aware deduplication per group (umi_tools dedup)."""
+    """UMI-aware deduplication per cell (umi_tools dedup)."""
     input:
-        bam = _group_bam,
-        bai = "results/prep/10x/{sample}/raw/{group}.bam.bai",
+        bam = _split_bam,
+        bai = "results/prep/10x/{sample}/split/{group}.bam.bai",
     output:
         bam = "results/prep/10x/{sample}/dedup/{group}.bam",
         log = "results/prep/10x/{sample}/dedup/{group}.umi.log",

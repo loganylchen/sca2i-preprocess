@@ -9,7 +9,6 @@ Layout:
 - ``adata.obs``              = per-observation metadata (sample, donor,
                                  chemistry, celltype, cell_barcode if 10x)
 """
-from __future__ import annotations
 
 import re
 import sys

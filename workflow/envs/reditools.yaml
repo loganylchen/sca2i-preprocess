@@ -2,8 +2,10 @@ name: sca2i-preprocess-reditools
 channels:
   - bioconda
   - conda-forge
-# REDItools2 is not always packaged on bioconda. We pull it from GitHub via pip;
-# bioconda may pick it up later — adjust here if so.
+# REDItools2 (BioinfoUNIBA) ships as bare scripts, not a Python package, so
+# we install only its runtime dependencies here and clone the repo at runtime
+# in workflow/rules/refs.smk (rule clone_reditools2). reditools.smk invokes
+# the resulting reditools.py via python.
 dependencies:
   - python >=3.8,<3.11
   - pysam >=0.21
@@ -11,6 +13,7 @@ dependencies:
   - htslib >=1.18
   - numpy
   - scipy
-  - pip
-  - pip:
-      - "git+https://github.com/BioinfoUNIBA/REDItools2.git@1e9d396f8aba058f073d7d27bf1148fe408adaf8"
+  - netifaces
+  - psutil
+  - sortedcontainers
+  - git

@@ -5,3 +5,6 @@ channels:
 dependencies:
   - sinto >=0.10
   - samtools >=1.18
+  # sinto imports pkg_resources at startup; setuptools >=80 drops it, so we
+  # pin to a vendored-pkg_resources release.
+  - setuptools <80

@@ -1,4 +1,34 @@
-"""Reference resources — genome FASTA + Alu BED."""
+"""Reference resources — genome FASTA + Alu BED + REDItools2 source."""
+
+
+# Pinned commit SHA for REDItools2 reproducibility.
+REDITOOLS2_COMMIT = "1e9d396f8aba058f073d7d27bf1148fe408adaf8"
+
+
+rule clone_reditools2:
+    """REDItools2 ships as bare scripts (no setup.py), so we clone the repo
+    at a pinned commit. reditools.smk invokes the resulting reditools.py."""
+    output:
+        script = "resources/reditools2/src/cineca/reditools.py",
+    params:
+        commit = REDITOOLS2_COMMIT,
+    log:
+        "logs/refs/clone_reditools2.log",
+    conda:
+        "../envs/reditools.yaml"
+    shell:
+        r"""
+        set -euo pipefail
+        DEST=resources/reditools2
+        if [ -d "$DEST/.git" ]; then
+            git -C "$DEST" fetch --quiet origin {params.commit} || true
+        else
+            rm -rf "$DEST"
+            git clone --quiet https://github.com/BioinfoUNIBA/REDItools2.git "$DEST"
+        fi
+        git -C "$DEST" checkout --quiet {params.commit}
+        test -f {output.script}
+        """
 
 
 rule download_genome:
