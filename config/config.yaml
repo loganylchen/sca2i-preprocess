@@ -38,16 +38,19 @@ genome:
 
 alu:
   # RepeatMasker out.gz from UCSC. Mouse users: swap for mm10/mm39.
-  rmsk_url: "http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.out.gz"
+  rmsk_url: "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.out.gz"
 
 reditools:
   # No --bed_file by design (de novo mode for filter-effect benchmarking).
   min_read_quality: 20         # -q
   min_base_quality: 25         # -bq
   min_read_length: 30          # -mrl
-  min_coverage: 5              # -mn  (per-cell / per-group depth floor)
+  min_coverage: 20             # -mn  (locked: D4-v2 / NN#3)
   min_edits_per_position: 1    # -men
-  strand: 0                    # -s   (0 = unstranded; SS3/10x both unstranded by default)
+  # NOTE: per-chemistry strand is selected at runtime in reditools.smk.
+  # 10x v3 + Smart-seq3 are FR-second-strand (REDItools -s 2).
+  # Smart-seq2 is unstranded (-s 0). Top-level value is fallback only.
+  strand: 0                    # -s   fallback only; per-chemistry override in reditools.smk
   threads_per_job: 4
 
 filters:

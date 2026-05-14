@@ -12,7 +12,6 @@ properties:
       fasta_url:    { type: string }
       chromosomes:
         oneOf:
-          - { type: string, enum: ["all"] }
           - { type: array, items: { type: string }, minItems: 1 }
   alu:
     type: object
@@ -32,6 +31,7 @@ properties:
       threads_per_job:        { type: integer, minimum: 1 }
   filters:
     type: object
+    required: [annotate_motif, annotate_alu, motif_window]
     properties:
       annotate_motif: { type: boolean }
       annotate_alu:   { type: boolean }
@@ -44,3 +44,29 @@ properties:
       drop_empty_sites:  { type: boolean }
   resources:
     type: object
+    required: [reditools, sinto, umi_dedup, markdup]
+    properties:
+      reditools:
+        type: object
+        required: [threads, mem_mb]
+        properties:
+          threads: { type: integer, minimum: 1 }
+          mem_mb:  { type: integer, minimum: 512 }
+      sinto:
+        type: object
+        required: [threads, mem_mb]
+        properties:
+          threads: { type: integer, minimum: 1 }
+          mem_mb:  { type: integer, minimum: 512 }
+      umi_dedup:
+        type: object
+        required: [threads, mem_mb]
+        properties:
+          threads: { type: integer, minimum: 1 }
+          mem_mb:  { type: integer, minimum: 512 }
+      markdup:
+        type: object
+        required: [threads, mem_mb]
+        properties:
+          threads: { type: integer, minimum: 1 }
+          mem_mb:  { type: integer, minimum: 512 }

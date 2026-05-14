@@ -36,7 +36,7 @@ drop_empty = bool(snakemake.params.drop_empty)
 # Path layouts written by filters.smk:
 #   results/filtered/{sample}/10x__{group}__{chrom}.annot.parquet
 #   results/filtered/{sample}/ss__{cell}.annot.parquet
-RE_10X = re.compile(r"^10x__(?P<group>[^_]+(?:_[^_]+)*?)__(?P<chrom>[^.]+)\.annot\.parquet$")
+RE_10X = re.compile(r"^10x__(?P<group>[^_]+(?:_[^_]+)*)__(?P<chrom>[^.]+)\.annot\.parquet$")
 RE_SS  = re.compile(r"^ss__(?P<cell>.+)\.annot\.parquet$")
 
 
@@ -84,6 +84,9 @@ def _site_key(row) -> tuple[str, int, int, str, str]:
 
 for obs_id in obs_ids:
     big = pd.concat(per_obs[obs_id], ignore_index=True)
+    big = big.drop_duplicates(
+        subset=["chrom", "pos", "strand", "ref", "alt"], keep="last"
+    ).reset_index(drop=True)
     per_obs[obs_id] = [big]  # collapsed
     for _, r in big.iterrows():
         k = _site_key(r)
@@ -136,7 +139,7 @@ cells = pd.read_csv(cells_tsv, sep="\t", dtype=str, comment="#").set_index("obs_
 samples = pd.read_csv(samples_tsv, sep="\t", dtype=str, comment="#").set_index("sample_id")
 
 obs_df = pd.DataFrame(index=pd.Index(obs_ids, name="obs_id"))
-for col in ["sample_id", "chemistry", "donor", "celltype", "cell_barcode"]:
+for col in ["sample_id", "chemistry", "donor", "cell_type", "cell_barcode"]:
     if col in cells.columns:
         obs_df[col] = [cells.at[oid, col] if oid in cells.index else "" for oid in obs_ids]
     else:

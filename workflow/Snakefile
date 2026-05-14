@@ -44,9 +44,6 @@ for obs_id, row in CELLS.iterrows():
         )
 
 CHROMS = config["genome"]["chromosomes"]
-if CHROMS == "all":
-    # Resolved lazily after genome indexing in refs.smk
-    CHROMS = []
 
 
 # ---------------------------------------------------------------------------

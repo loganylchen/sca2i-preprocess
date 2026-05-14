@@ -13,4 +13,4 @@ dependencies:
   - scipy
   - pip
   - pip:
-      - "git+https://github.com/BioinfoUNIBA/REDItools2.git"
+      - "git+https://github.com/BioinfoUNIBA/REDItools2.git@1e9d396f8aba058f073d7d27bf1148fe408adaf8"
