@@ -21,9 +21,9 @@ def cells_for_sample(sample: str):
 
 
 def groups_for_sample(sample: str):
-    """10x: list of celltype groups (one BAM per group after sinto split)."""
+    """10x: list of cell_type groups (one BAM per group after sinto split)."""
     sub = cells_for_sample(sample)
-    return sorted(sub["celltype"].dropna().unique().tolist())
+    return sorted(sub["cell_type"].dropna().unique().tolist())
 
 
 def get_obs_units(sample: str):

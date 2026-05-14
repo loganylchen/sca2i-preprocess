@@ -40,13 +40,16 @@ checkpoint split_bam_by_group:
         "../envs/sinto.yaml"
     shell:
         r"""
+        BAM=$(realpath {input.bam:q})
+        GROUPS=$(realpath {input.groups_tsv:q})
+        LOG=$(realpath {log:q})
         mkdir -p {output.outdir}
         cd {output.outdir}
         sinto filterbarcodes \
-            -b $OLDPWD/{input.bam} \
-            -c $OLDPWD/{input.groups_tsv} \
+            -b "$BAM" \
+            -c "$GROUPS" \
             -p {threads} \
-            > $OLDPWD/{log} 2>&1
+            > "$LOG" 2>&1
         """
 
 

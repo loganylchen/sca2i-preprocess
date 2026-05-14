@@ -29,15 +29,18 @@ if not do_run or df.empty:
 
 import pybedtools  # noqa: E402
 
-with tempfile.NamedTemporaryFile("w", suffix=".bed", delete=False) as tmp:
-    sites_bed = Path(tmp.name)
-    for _, row in df.iterrows():
-        # 0-based half-open BED
-        start = int(row["pos"]) - 1
-        end = int(row["pos"])
-        tmp.write(f"{row['chrom']}\t{start}\t{end}\n")
-
+tmp = tempfile.NamedTemporaryFile("w", suffix=".bed", delete=False)
+tmp.close()
+sites_bed = Path(tmp.name)
 try:
+    # Vectorised 0-based half-open BED write (avoids per-row iterrows()).
+    bed = (
+        df[["chrom", "pos"]]
+        .assign(start=df["pos"].astype(int) - 1, end=df["pos"].astype(int))
+        .loc[:, ["chrom", "start", "end"]]
+    )
+    bed.to_csv(sites_bed, sep="\t", header=False, index=False)
+
     sites = pybedtools.BedTool(str(sites_bed)).sort()
     alu = pybedtools.BedTool(str(bed_path))
     overlaps = sites.intersect(alu, c=True, sorted=False)

@@ -30,3 +30,12 @@ set-resources:
   split_bam_by_group:
     mem_mb: 8000
     runtime: 240
+  aggregate_anndata:
+    mem_mb: 32000
+    runtime: 480
+  filter_motif:
+    mem_mb: 8000
+    runtime: 120
+  sort_ss:
+    mem_mb: 16000
+    runtime: 240

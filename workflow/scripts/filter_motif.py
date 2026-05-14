@@ -66,14 +66,19 @@ for chrom, pos, strand in zip(df["chrom"], df["pos"], df["strand"]):
         ctx3.append("")
         ok.append(False)
         continue
-    if strand == -1 or strand == 2:
+    # Revcomp based on ref base (DNA-strand of the edited site), not REDItools
+    # strand code, so chemistry-aware strand handling upstream stays decoupled
+    # from motif context extraction.
+    seq_ref = region[window:window + 1]
+    if seq_ref == "T":
         region = _revcomp(region)
     five = region[:window]
     three = region[-window:]
     ctx5.append(five)
     ctx3.append(three)
-    # ADAR1 preference: 5' depleted G (so U/A at -1 is "ok"); 3' enriched G
-    five_ok = five[-1] in {"T", "U", "A"}
+    # ADAR1 preference: 5' depleted G (so T/A at -1 is "ok"); 3' enriched G.
+    # Note: DNA-only reference — no "U" base appears post-revcomp.
+    five_ok = five[-1] in {"T", "A"}
     three_ok = three[0] == "G"
     ok.append(bool(five_ok and three_ok))
 

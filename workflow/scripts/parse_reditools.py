@@ -13,15 +13,40 @@ from __future__ import annotations
 
 from pathlib import Path
 import gzip
+import logging
 import sys
 
 import pandas as pd
 
 snakemake = snakemake  # type: ignore[name-defined]
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s parse_reditools: %(message)s",
+    stream=sys.stderr,
+)
+
 in_path = Path(snakemake.input.tsv)
 out_path = Path(snakemake.output.parquet)
 out_path.parent.mkdir(parents=True, exist_ok=True)
+
+# Chemistry-aware strand interpretation. REDItools convention: strand 0 = none,
+# 1 = +, 2 = -. For stranded libraries (10x v3 / Smart-seq3 FR-2nd) we only
+# accept ref/strand pairs that correspond to a real A>G edit on the transcribed
+# strand. For unstranded (Smart-seq2 with -s 0) we accept both directions.
+chemistry = str(getattr(snakemake.params, "chemistry", "") or "").lower()
+_STRANDED_CHEMS = {"10x", "10x_v3", "smartseq3", "smart_seq3"}
+_UNSTRANDED_CHEMS = {"smartseq2", "smart_seq2"}
+if chemistry in _STRANDED_CHEMS:
+    stranded = True
+elif chemistry in _UNSTRANDED_CHEMS:
+    stranded = False
+else:
+    logging.warning(
+        "Unknown chemistry %r — defaulting to unstranded (-s 0) behaviour.",
+        chemistry,
+    )
+    stranded = False
 
 
 def _parse_basecount(s: str) -> tuple[int, int, int, int]:
@@ -52,15 +77,25 @@ def _iter_rows(path: Path):
             ref = f[i_ref]
             try:
                 strand = int(f[i_strand])
-            except ValueError:
+            except (ValueError, TypeError) as exc:
+                logging.warning(
+                    "Unparseable strand %r at %s:%s (%s) — coercing to 0",
+                    f[i_strand], f[i_region], f[i_pos], exc,
+                )
                 strand = 0
             n = int(f[i_cov])
             a, c, g, t = _parse_basecount(f[i_basect])
-            # A>G on + strand, T>C on - strand (=A>G on the transcribed strand)
+            # A>G on + strand, T>C on - strand (=A>G on the transcribed strand).
+            # For stranded chemistries reject ref/strand combinations that don't
+            # correspond to a transcribed-strand A>G call.
             if ref == "A":
+                if stranded and strand == 2:
+                    continue
                 k = g
                 alt = "G"
             elif ref == "T":
+                if stranded and strand == 1:
+                    continue
                 k = c
                 alt = "C"
             else:
@@ -84,9 +119,16 @@ df = pd.DataFrame.from_records(
     rows,
     columns=["chrom", "pos", "strand", "ref", "alt", "k", "n", "AF"],
 )
-# Down-cast for storage
-df = df.astype(
-    {"pos": "int64", "strand": "int8", "k": "int32", "n": "int32", "AF": "float32"}
-)
+if df.empty:
+    logging.warning(
+        "Empty REDItools output for %s — writing empty parquet to %s",
+        in_path, out_path,
+    )
+else:
+    # Down-cast for storage (only when non-empty; from_records on empty rows
+    # yields all-object dtype which astype can't down-cast cleanly).
+    df = df.astype(
+        {"pos": "int64", "strand": "int8", "k": "int32", "n": "int32", "AF": "float32"}
+    )
 df.to_parquet(out_path, compression="zstd", index=False)
-sys.stderr.write(f"Wrote {len(df)} A>I candidate rows to {out_path}\n")
+logging.info("Wrote %d A>I candidate rows to %s", len(df), out_path)

@@ -29,7 +29,7 @@ if sub.empty:
 
 rows: list[tuple[str, str]] = []
 for _, row in sub.iterrows():
-    group = row["celltype"]
+    group = row["cell_type"]
     bcs_raw = (row.get("cell_barcode") or "").strip()
     if bcs_raw:
         for bc in bcs_raw.split(","):

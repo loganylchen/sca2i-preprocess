@@ -1,16 +1,36 @@
 """REDItools2 de novo invocations + TSV→parquet conversion."""
 
 
-def _reditools_flags():
+_STRANDED_CHEMS = {"10x", "10x_v3", "smartseq3", "smart_seq3"}
+_UNSTRANDED_CHEMS = {"smartseq2", "smart_seq2"}
+
+
+def _chem_strand(chem: str) -> int:
+    """Map chemistry name to REDItools -s value."""
+    c = str(chem).lower()
+    if c in _STRANDED_CHEMS:
+        return 2  # FR-second-strand (10x v3, Smart-seq3)
+    if c in _UNSTRANDED_CHEMS:
+        return 0  # Smart-seq2 unstranded
+    return int(config["reditools"]["strand"])
+
+
+def _reditools_flags(wildcards):
     rt = config["reditools"]
+    chem = SAMPLES.at[wildcards.sample, "chemistry"]
+    s = _chem_strand(chem)
     return (
         f"-q {rt['min_read_quality']} "
         f"-bq {rt['min_base_quality']} "
         f"-mrl {rt['min_read_length']} "
         f"-mn {rt['min_coverage']} "
         f"-men {rt['min_edits_per_position']} "
-        f"-s {rt['strand']}"
+        f"-s {s}"
     )
+
+
+def _chem_for(wildcards):
+    return SAMPLES.at[wildcards.sample, "chemistry"]
 
 
 rule reditools_10x:
@@ -26,7 +46,7 @@ rule reditools_10x:
     output:
         tsv = "results/reditools/10x/{sample}/{group}/{chrom}.tsv.gz",
     params:
-        flags = _reditools_flags(),
+        flags = _reditools_flags,
     threads: config["resources"]["reditools"]["threads"]
     resources:
         mem_mb = config["resources"]["reditools"]["mem_mb"],
@@ -39,8 +59,8 @@ rule reditools_10x:
         set -euo pipefail
         TMP=$(mktemp -d)
         trap "rm -rf $TMP" EXIT
-        # Slice BAM to one chromosome
-        samtools view -b -@ {threads} {input.bam} {wildcards.chrom} > $TMP/in.bam
+        # Slice BAM to one chromosome with MAPQ>=20 (parent NN#3 lock)
+        samtools view -b -@ {threads} -q 20 {input.bam:q} {wildcards.chrom} > $TMP/in.bam
         samtools index $TMP/in.bam
         reditools.py \
             -f $TMP/in.bam \
@@ -63,7 +83,7 @@ rule reditools_ss:
     output:
         tsv = "results/reditools/ss/{sample}/{cell}.tsv.gz",
     params:
-        flags = _reditools_flags(),
+        flags = _reditools_flags,
     threads: config["resources"]["reditools"]["threads"]
     resources:
         mem_mb = config["resources"]["reditools"]["mem_mb"],
@@ -91,6 +111,8 @@ rule reditools_to_parquet_10x:
         tsv = "results/reditools/10x/{sample}/{group}/{chrom}.tsv.gz",
     output:
         parquet = "results/reditools/10x/{sample}/{group}/{chrom}.parquet",
+    params:
+        chemistry = _chem_for,
     log:
         "logs/reditools/parquet/10x/{sample}_{group}_{chrom}.log",
     conda:
@@ -104,6 +126,8 @@ rule reditools_to_parquet_ss:
         tsv = "results/reditools/ss/{sample}/{cell}.tsv.gz",
     output:
         parquet = "results/reditools/ss/{sample}/{cell}.parquet",
+    params:
+        chemistry = _chem_for,
     log:
         "logs/reditools/parquet/ss/{sample}_{cell}.log",
     conda:

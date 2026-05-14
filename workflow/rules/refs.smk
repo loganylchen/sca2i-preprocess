@@ -13,8 +13,11 @@ rule download_genome:
     shell:
         r"""
         mkdir -p resources/genome
-        (curl -fsSL "{params.url}" \
-            | (gunzip -c 2>/dev/null || cat) > {output.fa}) 2> {log}
+        (curl -fsSL {params.url:q} \
+            | (gunzip -c 2>/dev/null || cat) > {output.fa}.tmp \
+            && samtools faidx {output.fa}.tmp \
+            && mv {output.fa}.tmp {output.fa} \
+            && rm -f {output.fa}.tmp.fai) 2> {log}
         """
 
 
@@ -43,14 +46,20 @@ rule download_alu_raw:
     shell:
         r"""
         mkdir -p resources/alu
-        curl -fsSL "{params.url}" -o {output} 2> {log}
+        (curl -fsSL {params.url:q} -o {output}.tmp \
+            && mv {output}.tmp {output}) 2> {log}
         """
 
 
 rule make_alu_bed:
-    """Extract Alu* family entries from RepeatMasker .out into a 3-col BED."""
+    """Extract Alu* family entries from RepeatMasker .out into a 3-col BED.
+
+    Normalises the chrom prefix to match the indexed genome (UCSC ``chr1`` vs
+    Ensembl ``1``) so downstream Alu overlap isn't silently empty.
+    """
     input:
-        "resources/alu/rmsk.out.gz",
+        rmsk = "resources/alu/rmsk.out.gz",
+        fai  = "resources/genome/genome.fa.fai",
     output:
         "resources/alu/alu.bed",
     log:
@@ -59,8 +68,19 @@ rule make_alu_bed:
         "../envs/samtools.yaml"
     shell:
         r"""
-        (gunzip -c {input} \
-            | awk 'NR>3 && $11 ~ /^Alu/ {{ print $5"\t"($6-1)"\t"$7 }}' \
+        set -euo pipefail
+        if [ ! -s {input.fai} ]; then
+            echo "ERROR: empty or missing fai: {input.fai}" >&2
+            exit 1
+        fi
+        HAS_CHR=$(head -1 {input.fai} | awk '{{print ($1 ~ /^chr/) ? "1" : "0"}}')
+        (gunzip -c {input.rmsk} \
+            | awk -v has_chr="$HAS_CHR" 'NR>3 && $11 ~ /^Alu/ {{
+                chrom=$5;
+                if (has_chr=="0") sub(/^chr/, "", chrom);
+                else if (chrom !~ /^chr/) chrom="chr"chrom;
+                print chrom"\t"($6-1)"\t"$7
+              }}' \
             | sort -k1,1 -k2,2n \
             > {output}) 2> {log}
         """

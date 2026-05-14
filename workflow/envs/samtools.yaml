@@ -4,5 +4,5 @@ channels:
   - conda-forge
 dependencies:
   - samtools >=1.18
-  - picard >=3.1
+  - picard =3.1.1
   - curl
