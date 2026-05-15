@@ -64,6 +64,7 @@ PYTHONNOUSERSITE=1 snakemake --use-conda --cores 1 -p --keep-going
 | `var.columns` | `chrom, pos, strand, ref, alt, ctx5, ctx3, adar_motif_ok, in_alu` |
 | Chromosomes seen | `22, X` |
 | `adar_motif_ok=True` | 6598 / 39404 (16.7%) |
+| `in_alu=True` | 29053 / 39404 (73.7%) — matches A-to-I/Alu enrichment literature |
 | Wall time | ~33 min sinto split + ~5h10m downstream (single core) |
 | Snakemake jobs | 13411 / 13411 |
 
@@ -233,13 +234,14 @@ PYTHONNOUSERSITE=1 conda run -n sca2i-analyze python tools/analyze_with_scanpy.p
   unique `cell_barcode` values; `prep_groups.py` writes bc→bc rows so
   sinto emits one BAM per cell. `cells.tsv` carries one obs row per cell.
 
-## Known pre-existing defects (not addressed here)
+## Fixes captured on this branch (continued)
 
-- `make_alu_bed` filters `$11 ~ /^Alu/` but in RepeatMasker `.out` the
-  Alu family name is in column 10 (column 11 is the class
-  `SINE/Alu`). Effect: `resources/alu/alu.bed` is empty; `in_alu`
-  annotation is all-False. Annotation-only — no impact on counts. One-char
-  fix when production-readying.
+- **`make_alu_bed`** column filter corrected: was `$11 ~ /^Alu/` which
+  never matched (RepeatMasker `.out` puts the family name in column 10
+  and the class string `SINE/Alu` in column 11). Now `$11 == "SINE/Alu"`,
+  which captures every Alu subfamily. `resources/alu/alu.bed` goes from 0
+  to 1,238,995 intervals; `in_alu=True` on this run is 29053 / 39404
+  (73.7%), consistent with the A-to-I editing literature.
 
 ## Runtime env requirement
 

@@ -104,8 +104,11 @@ rule make_alu_bed:
             exit 1
         fi
         HAS_CHR=$(head -1 {input.fai} | awk '{{print ($1 ~ /^chr/) ? "1" : "0"}}')
+        # RepeatMasker .out columns: $10 = repeat name (e.g. AluSx, AluJb),
+        # $11 = repeat class/family (e.g. SINE/Alu). Match column 11 to the
+        # SINE/Alu class, which captures every Alu subfamily.
         (gunzip -c {input.rmsk} \
-            | awk -v has_chr="$HAS_CHR" 'NR>3 && $11 ~ /^Alu/ {{
+            | awk -v has_chr="$HAS_CHR" 'NR>3 && $11 == "SINE/Alu" {{
                 chrom=$5;
                 if (has_chr=="0") sub(/^chr/, "", chrom);
                 else if (chrom !~ /^chr/) chrom="chr"chrom;
