@@ -12,6 +12,8 @@ benchmarks/
 resources/genome/
 resources/alu/
 resources/reditools/
+resources/reditools2/
+resources/gtf/
 
 # Conda envs (managed by snakemake --use-conda)
 .conda/

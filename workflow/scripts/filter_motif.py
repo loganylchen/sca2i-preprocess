@@ -8,7 +8,6 @@
 This is annotation only — no rows are dropped. The downstream scA2I discoverer
 decides whether to use the column as a hard filter.
 """
-from __future__ import annotations
 
 from pathlib import Path
 import sys

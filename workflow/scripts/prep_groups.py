@@ -1,13 +1,11 @@
 """Build a sinto-compatible barcode -> group TSV from the cells.tsv sheet.
 
-For 10x samples, cell_barcode is expected to be either:
-- a single comma-separated string of barcodes for that group, OR
-- empty, in which case the script looks for a sibling file
-  ``<cell_bam_dir>/<obs_id>.barcodes.txt`` (one barcode per line).
+Per-cell 10x mode: one row per cell, with group_name == cell_barcode so sinto
+emits one BAM per cell.
 
-Output: 2-column TSV (barcode<TAB>group_name), as required by ``sinto filterbarcodes -c``.
+Output: 2-column TSV (barcode<TAB>group_name), as required by ``sinto
+filterbarcodes -c``.
 """
-from __future__ import annotations
 
 from pathlib import Path
 import sys
@@ -29,28 +27,16 @@ if sub.empty:
 
 rows: list[tuple[str, str]] = []
 for _, row in sub.iterrows():
-    group = row["cell_type"]
-    bcs_raw = (row.get("cell_barcode") or "").strip()
-    if bcs_raw:
-        for bc in bcs_raw.split(","):
-            bc = bc.strip()
-            if bc:
-                rows.append((bc, group))
-    else:
-        # Look for sidecar file
-        sidecar = cells_tsv.parent / f"{row['obs_id']}.barcodes.txt"
-        if not sidecar.exists():
-            sys.stderr.write(
-                f"obs_id {row['obs_id']}: no barcodes inline and no sidecar at {sidecar}\n"
-            )
-            sys.exit(1)
-        for bc in sidecar.read_text().splitlines():
-            bc = bc.strip()
-            if bc:
-                rows.append((bc, group))
+    bc = (row.get("cell_barcode") or "").strip()
+    if not bc:
+        sys.stderr.write(
+            f"obs_id {row['obs_id']}: missing cell_barcode in per-cell mode\n"
+        )
+        sys.exit(1)
+    rows.append((bc, bc))  # group_name = barcode -> one BAM per cell
 
 out_df = pd.DataFrame(rows, columns=["barcode", "group"]).drop_duplicates()
 out_df.to_csv(out_path, sep="\t", index=False, header=False)
 sys.stderr.write(
-    f"Wrote {len(out_df)} barcode->group rows ({out_df['group'].nunique()} groups) to {out_path}\n"
+    f"Wrote {len(out_df)} per-cell barcode->group rows to {out_path}\n"
 )

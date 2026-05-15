@@ -39,10 +39,11 @@ rule reditools_10x:
     so REDItools sees only one chromosome at a time (parallelism + bounded mem).
     """
     input:
-        bam = "results/prep/10x/{sample}/dedup/{group}.bam",
-        bai = "results/prep/10x/{sample}/dedup/{group}.bam.bai",
-        fa  = "resources/genome/genome.fa",
-        fai = "resources/genome/genome.fa.fai",
+        bam    = "results/prep/10x/{sample}/dedup/{group}.bam",
+        bai    = "results/prep/10x/{sample}/dedup/{group}.bam.bai",
+        fa     = "resources/genome/genome.fa",
+        fai    = "resources/genome/genome.fa.fai",
+        script = "resources/reditools2/src/cineca/reditools.py",
     output:
         tsv = "results/reditools/10x/{sample}/{group}/{chrom}.tsv.gz",
     params:
@@ -62,7 +63,7 @@ rule reditools_10x:
         # Slice BAM to one chromosome with MAPQ>=20 (parent NN#3 lock)
         samtools view -b -@ {threads} -q 20 {input.bam:q} {wildcards.chrom} > $TMP/in.bam
         samtools index $TMP/in.bam
-        reditools.py \
+        python {input.script} \
             -f $TMP/in.bam \
             -r {input.fa} \
             -t {threads} \
@@ -76,10 +77,11 @@ rule reditools_10x:
 rule reditools_ss:
     """Per-cell REDItools2 de novo (whole BAM, all chroms in one pass)."""
     input:
-        bam = "results/prep/ss/{sample}/dedup/{cell}.bam",
-        bai = "results/prep/ss/{sample}/dedup/{cell}.bam.bai",
-        fa  = "resources/genome/genome.fa",
-        fai = "resources/genome/genome.fa.fai",
+        bam    = "results/prep/ss/{sample}/dedup/{cell}.bam",
+        bai    = "results/prep/ss/{sample}/dedup/{cell}.bam.bai",
+        fa     = "resources/genome/genome.fa",
+        fai    = "resources/genome/genome.fa.fai",
+        script = "resources/reditools2/src/cineca/reditools.py",
     output:
         tsv = "results/reditools/ss/{sample}/{cell}.tsv.gz",
     params:
@@ -96,7 +98,7 @@ rule reditools_ss:
         set -euo pipefail
         TMP=$(mktemp -d)
         trap "rm -rf $TMP" EXIT
-        reditools.py \
+        python {input.script} \
             -f {input.bam} \
             -r {input.fa} \
             -t {threads} \

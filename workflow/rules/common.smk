@@ -1,4 +1,9 @@
-"""Shared helpers — chemistry dispatch, observation-unit fan-out."""
+"""Shared helpers — chemistry dispatch, observation-unit fan-out.
+
+Per-cell 10x mode: each row in cells.tsv with chemistry='10x' represents a
+single cell barcode (one obs row). ``groups_for_sample`` returns the unique
+cell_barcode values for the sample.
+"""
 from __future__ import annotations
 
 
@@ -21,20 +26,23 @@ def cells_for_sample(sample: str):
 
 
 def groups_for_sample(sample: str):
-    """10x: list of cell_type groups (one BAM per group after sinto split)."""
+    """10x per-cell: list of unique cell_barcode values for the sample."""
     sub = cells_for_sample(sample)
-    return sorted(sub["cell_type"].dropna().unique().tolist())
+    return sorted(sub["cell_barcode"].dropna().unique().tolist())
 
 
 def get_obs_units(sample: str):
     """
     Per-chemistry list of observation units (the unit at which REDItools is
-    invoked). For 10x this is celltype groups; for SS it is per-cell BAMs.
-    Returns a list of (obs_id, unit_name) tuples.
+    invoked).
+      - 10x: one unit per cell barcode (per-cell mode).
+      - SS:  one unit per cell BAM.
+    Returns a list of (obs_id, unit_name) tuples where unit_name is the
+    wildcard used in result paths (``{group}`` for 10x, ``{cell}`` for SS).
     """
     sub = cells_for_sample(sample)
     if is_10x(sample):
-        return [(f"{sample}__{g}", g) for g in groups_for_sample(sample)]
+        return [(f"{sample}__{bc}", bc) for bc in groups_for_sample(sample)]
     return [(row["obs_id"], row["bam_basename"]) for _, row in sub.iterrows()]
 
 

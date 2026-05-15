@@ -2,7 +2,6 @@
 
 Adds a single boolean column ``in_alu``. Annotation only — no rows are dropped.
 """
-from __future__ import annotations
 
 from pathlib import Path
 import sys
