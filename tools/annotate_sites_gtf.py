@@ -30,7 +30,7 @@ H5AD_IN = Path("results/anndata/sca2i_input.h5ad")
 H5AD_OUT = Path("results/anndata/sca2i_input.annotated.h5ad")
 TSV_OUT = Path("results/anndata/sites_annotated.tsv")
 GTF = Path("resources/gtf/Homo_sapiens.GRCh38.110.gtf.gz")
-CHROMS = {"22", "X"}
+CHROMS = {str(c) for c in list(range(1, 23)) + ["X"]}
 
 
 def _site_pr(var: pd.DataFrame) -> pr.PyRanges:

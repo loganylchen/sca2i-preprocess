@@ -1,4 +1,4 @@
-# sca2i-preprocess workflow config — PBMC 1k v3 per-cell smoke test profile.
+# sca2i-preprocess workflow config — PBMC 1k v3 per-cell full-genome profile.
 # Validated against workflow/schemas/config.schema.yaml at start-up.
 
 samples_tsv: "config/samples.tsv"
@@ -7,8 +7,30 @@ cells_tsv:   "config/cells.tsv"
 genome:
   # Ensembl-style (no "chr" prefix); matches the 10x cellranger 3.0 BAM.
   fasta_url: "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-  # Smoke test: restrict to chr22 + X for fast turnaround.
+  # Full autosomes + X. Y and MT excluded (Y is donor-dependent; MT has its
+  # own editing biology and contamination profile, scope it separately).
   chromosomes:
+    - "1"
+    - "2"
+    - "3"
+    - "4"
+    - "5"
+    - "6"
+    - "7"
+    - "8"
+    - "9"
+    - "10"
+    - "11"
+    - "12"
+    - "13"
+    - "14"
+    - "15"
+    - "16"
+    - "17"
+    - "18"
+    - "19"
+    - "20"
+    - "21"
     - "22"
     - "X"
 

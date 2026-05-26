@@ -1,8 +1,19 @@
-# PBMC 1k v3 Per-Cell Smoke Test
+# PBMC 1k v3 Per-Cell Full-Genome Run
 
 End-to-end validation of `sca2i-preprocess` on the 10x Genomics PBMC 1k v3
 public demo with per-barcode 10x architecture (one obs row per cell, not
 pseudobulk by celltype).
+
+This run scans the **full autosomes + X** (not the earlier chr22+X smoke
+subset). Coverage threshold is still the smoke-grade `min_coverage=3`
+(production locks 20), so the site list and AF distribution remain
+smoke-grade — but the genomic scope is now complete.
+
+> **Disk note:** the full-genome per-cell scan transiently consumed
+> ~860 GB of held-open REDItools temp and hit `No space left on device`
+> at ~66%; it was resumed with `--rerun-triggers mtime` after the temp was
+> reclaimed on process exit. Use `tools/disk_watchdog.sh <pid> <min_gb>`
+> as a safety net. /tmp is on the root fs on this host.
 
 ## Inputs
 
@@ -17,12 +28,13 @@ pseudobulk by celltype).
 
 ## Configuration deviations from production
 
-These are smoke-only relaxations; revert before running production batches.
+Only `min_coverage` remains a smoke relaxation on this run; revert before
+running production batches.
 
-| Key | Smoke | Production |
+| Key | This run | Production |
 |---|---|---|
-| `reditools.min_coverage` | 3 | 20 (parent NN#3 lock) |
-| `genome.chromosomes` | `["22", "X"]` | full autosomes + X (Y/MT excluded) |
+| `reditools.min_coverage` | 3 (smoke) | 20 (parent NN#3 lock) |
+| `genome.chromosomes` | full autosomes 1–22 + X (Y/MT excluded) | same |
 | Cells per sample | full 1222 barcodes (filtered_feature_bc_matrix) | full barcode list |
 | Cores | 1 (single-thread) | per-cluster (see `profiles/slurm`) |
 
@@ -57,19 +69,19 @@ PYTHONNOUSERSITE=1 snakemake --use-conda --cores 1 -p --keep-going
 
 | Metric | Value |
 |---|---|
-| shape (cells × sites) | **1186 × 39404** |
-| X dtype, nnz | int32, 56605 |
-| `layers["edits"]` dtype, nnz | int32, 56605 |
+| shape (cells × sites) | **1215 × 733621** |
+| X dtype, nnz | int32, 1110844 |
+| `layers["edits"]` dtype, nnz | int32, 1110844 |
 | `obs.columns` | `sample_id, chemistry, donor, cell_type, cell_barcode` |
 | `var.columns` | `chrom, pos, strand, ref, alt, ctx5, ctx3, adar_motif_ok, in_alu` |
-| Chromosomes seen | `22, X` |
-| `adar_motif_ok=True` | 6598 / 39404 (16.7%) |
-| `in_alu=True` | 29053 / 39404 (73.7%) — matches A-to-I/Alu enrichment literature |
-| Wall time | ~33 min sinto split + ~5h10m downstream (single core) |
-| Snakemake jobs | 13411 / 13411 |
+| Chromosomes seen | `1–22, X` (23 contigs) |
+| `adar_motif_ok=True` | 122883 / 733621 (16.8%) |
+| `in_alu=True` | 516239 / 733621 (70.4%) — matches A-to-I/Alu enrichment literature |
+| Wall time | full genome, single core, multi-day (disk-full interrupt + `--rerun-triggers mtime` resume) |
+| Snakemake jobs | 105094 total (resumed; final 17733 / 17733) |
 
-36 cells of 1222 dropped: zero candidate edits passing `min_coverage=3` on
-chr22 + chrX.
+7 cells of 1222 dropped: zero candidate edits passing `min_coverage=3`
+across the full genome.
 
 ## Diagnostic plots
 
@@ -78,19 +90,18 @@ Generated with `tools/plot_smoke_results.py` from
 
 | Stat | Value |
 |---|---|
-| median sites/cell | 46 |
-| max sites/cell    | 146 |
-| min sites/cell    | 1 |
+| median sites/cell | 909 |
+| max sites/cell    | 3216 |
 | mean AF           | 0.91 |
 | median AF         | 1.00 |
-| nonzero (cell, site) entries | 56605 |
+| nonzero (cell, site) entries | 1110844 |
 | chr22 sites / chrX sites | 18108 / 21296 |
-| `adar_motif_ok` sites | 6598 / 39404 (16.7%) |
+| `adar_motif_ok` sites | 122883 / 733621 (16.8%) |
 
 ### 1. Per-cell detection rate
 
-Cells ranked by number of covered sites. Long tail across the 1186 cells
-that survived the `min_coverage=3` filter; median 46, max 146.
+Cells ranked by number of covered sites. Long tail across the 1215 cells
+that survived the `min_coverage=3` filter; median 909, max 3216.
 
 ![sites per cell](img/smoke_pbmc1k/01_sites_per_cell.png)
 
@@ -106,24 +117,25 @@ Production `min_coverage=20` will spread this out.
 ### 3. Motif context (ctx5 × ctx3)
 
 Left: counts of candidate sites by 5′ and 3′ neighbouring base.
-Right: ADAR1 preference mask (5′ ≠ G AND 3′ = G). 6598 / 39404 sites
-(16.7%) match. This is annotation-only; we do not drop non-preferred
+Right: ADAR1 preference mask (5′ ≠ G AND 3′ = G). 122883 / 733621 sites
+(16.8%) match. This is annotation-only; we do not drop non-preferred
 sites at the preprocess stage.
 
 ![motif heatmap](img/smoke_pbmc1k/03_motif_context_heatmap.png)
 
 ### 4. Sites per chromosome
 
-Stacked by `adar_motif_ok`. chrX contributes ~18% more sites than chr22
-(21296 vs 18108).
+Stacked by `adar_motif_ok`. Full autosomes + X; chr1 leads (67825 sites),
+chr21 is smallest of the autosomes (7088). A→G and T→C are near-balanced
+across the cohort (374181 vs 359440) — the same A-to-I edit observed on
+opposite reference strands.
 
 ![chrom breakdown](img/smoke_pbmc1k/04_chrom_breakdown.png)
 
 ### 5. Sparsity pattern
 
-Coverage matrix `X` (1186 cells × 39404 sites) is extremely sparse
-(nnz=56605, density ≈ 0.12%). The two diagonal bands correspond to the
-chr22 and chrX site ranges respectively.
+Coverage matrix `X` (1215 cells × 733621 sites) is extremely sparse
+(nnz=1110844, density ≈ 0.12%).
 
 ![sparsity](img/smoke_pbmc1k/05_sparsity_pattern.png)
 
@@ -131,7 +143,7 @@ chr22 and chrX site ranges respectively.
 
 To connect the candidate edit sites back to standard scRNA-seq analysis we
 (a) annotate each site against Ensembl r110 and (b) embed the full 1222-cell
-PBMC matrix, overlay the 1186 cells that survived editing-side QC, and
+PBMC matrix, overlay the 1215 cells that survived editing-side QC, and
 look at per–cell-type editing.
 
 The plots below are produced by `tools/annotate_sites_gtf.py` +
@@ -143,17 +155,18 @@ The plots below are produced by `tools/annotate_sites_gtf.py` +
 
 | Bucket | Count |
 |---|---|
-| exon       | 5135  |
-| intron     | 26944 |
-| intergenic | 7325  |
-| protein_coding host | 28534 |
-| lncRNA host         | 3203  |
+| exon       | 92312  |
+| intron     | 549795 |
+| intergenic | 91514  |
+| protein_coding host | 588233 |
+| lncRNA host         | 46294  |
 
-Top host genes (chr22+X): TNRC6B (1284), DIAPH2 (589), PPP6R2 (472),
-TBC1D22A (441), STAG2 (413), TBL1X (333), GRK3 (322), MRTFA (309). Most
-candidate sites land in introns of protein-coding genes — consistent
-with the expected enrichment of A-to-I editing inside SINE/Alu repeats
-embedded in introns.
+Top host genes (full genome): WWOX (1766), ARHGEF18 (1567), PITPNC1 (1358),
+PRKCB (1353), CAMK1D (1350), RABGAP1L (1297), TNRC6B (1284), CUX1 (1083),
+ADK (1068), MALAT1 (944). Most candidate sites land in introns of
+protein-coding genes (549795 / 733621 ≈ 75%) — consistent with the
+expected enrichment of A-to-I editing inside SINE/Alu repeats embedded
+in introns (in_alu = 70.4%).
 
 ![gene annotation](img/smoke_pbmc1k/09_gene_annotation_breakdown.png)
 
@@ -171,10 +184,10 @@ Cluster sizes: Mono_CD14=385, T_naive=356, B=186, NK=178, DC=8.
 
 ### 8. Editing cells overlaid on the full UMAP
 
-The 1186 cells that survived editing-side QC (red) cover essentially the
-entire PBMC UMAP. 1111/1186 also pass expression-side QC and land inside
-a cluster; 75 are dropped by `min_genes=200` / `pct_mt<20%` and don't
-show up.
+The 1215 cells that survived editing-side QC (red) cover essentially the
+entire PBMC UMAP. 1113/1215 also pass expression-side QC and land inside
+a cluster; the rest are dropped by `min_genes=200` / `pct_mt<20%` and
+don't show up.
 
 ![umap overlay](img/smoke_pbmc1k/07_umap_smoke_overlay.png)
 
@@ -188,7 +201,7 @@ edits (Σ `k`), number of covered sites, and global AF = Σk/Σn.
 ### 10. Editing rate by cell type
 
 Per-cell global AF, grouped by the leiden-inferred cell type, across the
-1111 cells with both expression and editing data. With smoke
+1113 cells with both expression and editing data. With smoke
 `min_coverage=3` most cells sit at AF≈1; production `min_coverage=20`
 will spread this out. The cell-count panel on the right shows how
 editing-side coverage distributes across the 5 PBMC populations.
@@ -203,7 +216,7 @@ conda env create -n sca2i-analyze -f workflow/envs/analyze.yaml
 #   - or -
 docker build -f docker/Dockerfile -t sca2i-analyze:latest .
 
-# One-time: Ensembl GTF for chr22/X gene annotation
+# One-time: Ensembl GTF for genome-wide gene annotation
 mkdir -p resources/gtf && curl -fsSL -o \
     resources/gtf/Homo_sapiens.GRCh38.110.gtf.gz \
     https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
@@ -240,8 +253,8 @@ PYTHONNOUSERSITE=1 conda run -n sca2i-analyze python tools/analyze_with_scanpy.p
   never matched (RepeatMasker `.out` puts the family name in column 10
   and the class string `SINE/Alu` in column 11). Now `$11 == "SINE/Alu"`,
   which captures every Alu subfamily. `resources/alu/alu.bed` goes from 0
-  to 1,238,995 intervals; `in_alu=True` on this run is 29053 / 39404
-  (73.7%), consistent with the A-to-I editing literature.
+  to 1,238,995 intervals; `in_alu=True` on this full-genome run is
+  516239 / 733621 (70.4%), consistent with the A-to-I editing literature.
 
 ## Runtime env requirement
 
